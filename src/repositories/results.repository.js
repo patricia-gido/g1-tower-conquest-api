@@ -6,7 +6,7 @@ async function findFinishedGamePlayers(since) {
   const replacements = {};
   if (since) {
     const d = new Date(since);
-    if (isNaN(d.getTime())) { const e = new Error('Invalid since'); e.status = 400; throw e; }
+    if (isNaN(d.getTime())) return [];
     where += ` AND s.ended_at > :since`;
     replacements.since = d;
   }

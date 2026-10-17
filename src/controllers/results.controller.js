@@ -5,10 +5,10 @@ const gameInfo = require('../config/game-info');
 async function list(req, res) {
   try {
     const since = req.query.since;
-    if (since) {
-      const d = new Date(since);
-      if (isNaN(d.getTime())) {
-        return res.status(400).json({ code: 'INVALID_SINCE', message: 'Invalid since query' });
+    if (since !== undefined && since !== '') {
+      const parsed = Date.parse(since);
+      if (isNaN(parsed)) {
+        return res.status(400).json({ error: 'Invalid since' });
       }
     }
     const resultsArray = await resultsService.listFinishedGames(since);
@@ -18,9 +18,11 @@ async function list(req, res) {
       results: resultsArray
     });
   } catch (err) {
-    if (err.status === 400) return res.status(400).json({ code: 'INVALID_SINCE', message: 'Invalid since query' });
+    if (err.status === 400) {
+      return res.status(400).json({ error: 'Invalid since' });
+    }
     console.error(err);
-    return res.status(500).json({ error: 'Internal' });
+    return res.status(500).json({ error: 'Internal server error' });
   }
 }
 
