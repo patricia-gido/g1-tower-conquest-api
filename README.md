@@ -76,3 +76,20 @@ Base URL: `http://localhost:3001/api/v1`
 | npm run db:check | Counts the rows in every table |
 | npm run db:reset | Empties the database, rebuilds every table and reloads the seed data |
 | npm run check | Runs the same automatic check that GitHub runs after every push |
+
+## Task 8 - Results Endpoint
+
+### What "completed" means
+In Tower Conquest, `completed = true` means the player finished all towers in the session and reached the finish line.
+
+My implementation:
+- `completed` comes from `leaderboard.completed` column
+- true = player finished the game
+- false = player disconnected or did not finish
+- Example: score 100, 90 = true, score 80 = false (abandoned)
+
+### Endpoint
+GET /api/v1/results
+- Requires header: X-Hub-Key: dev-hub-key
+- Returns 1 row per player per finished game (ended_at IS NOT NULL)
+- Columns: session_code, started_at, ended_at, school_id, nickname, score, completed

@@ -8,9 +8,7 @@ module.exports = {
       created_at: { type: Sequelize.DATE, allowNull: false },
       updated_at: { type: Sequelize.DATE, allowNull: false }
     });
-    await queryInterface.addConstraint('game_settings', {
-      fields: ['key'], type: 'unique', name: 'uq_game_settings_key'
-    });
+    await queryInterface.addConstraint('game_settings', { fields: ['key'], type: 'unique', name: 'uq_game_settings_key' });
   },
   async down(queryInterface) { await queryInterface.dropTable('game_settings'); }
 };
