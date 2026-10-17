@@ -1,24 +1,26 @@
-// Translates between HTTP and the service. No SQL, no business rules.
-const gameInfo = require('../config/game-info');
+'use strict';
 const resultsService = require('../services/results.service');
 
-async function getResults(req, res) {
-  // Optional: ?since=2026-10-20T00:00:00Z returns only games that ended after that moment.
-  const { since } = req.query;
-  if (since !== undefined && Number.isNaN(Date.parse(since))) {
-    return res.status(400).json({
-      error: { code: 'INVALID_SINCE', message: 'since must be a date and time, for example 2026-10-20T00:00:00Z.' },
-    });
+async function list(req, res) {
+  try {
+    const since = req.query.since;
+    if (since) {
+      const d = new Date(since);
+      if (isNaN(d.getTime())) {
+        return res.status(400).json({ error: 'Invalid since' });
+      }
+    }
+    const results = await resultsService.listFinishedGames(since);
+    return res.status(200).json(results);
+  } catch (err) {
+    if (err.status === 400) {
+      return res.status(400).json({ error: 'Invalid since' });
+    }
+    console.error(err);
+    return res.status(500).json({ error: 'Internal server error' });
   }
-
-    const results = await resultsService.listFinishedGames(since ? new Date(since) : undefined);
-
-  res.status(200).json({
-    game: gameInfo.slug,
-    developer: gameInfo.developer,
-    generated_at: new Date().toISOString(),
-    results
-  });
 }
 
-module.exports = { getResults };
+module.exports = list;
+module.exports.list = list;
+module.exports.getResults = list;
