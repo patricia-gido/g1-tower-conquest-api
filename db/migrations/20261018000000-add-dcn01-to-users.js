@@ -2,13 +2,13 @@
 /** @type {import('sequelize-cli').Migration} */
 module.exports = {
   async up(queryInterface, Sequelize) {
-    try { await queryInterface.addColumn('users', 'school_id', { type: Sequelize.STRING, allowNull: true }); } catch(e) {}
-    try { await queryInterface.addColumn('users', 'full_name', { type: Sequelize.STRING, allowNull: true }); } catch(e) {}
-    try { await queryInterface.addColumn('users', 'email', { type: Sequelize.STRING, allowNull: true }); } catch(e) {}
+    await queryInterface.addColumn('users', 'school_id', { type: Sequelize.STRING, allowNull: true }).catch(() => {});
+    await queryInterface.addColumn('users', 'full_name', { type: Sequelize.STRING, allowNull: true }).catch(() => {});
+    await queryInterface.addColumn('users', 'email', { type: Sequelize.STRING, allowNull: true }).catch(() => {});
   },
   async down(queryInterface) {
-    try { await queryInterface.removeColumn('users', 'school_id'); } catch(e) {}
-    try { await queryInterface.removeColumn('users', 'full_name'); } catch(e) {}
-    try { await queryInterface.removeColumn('users', 'email'); } catch(e) {}
+    await queryInterface.removeColumn('users', 'school_id').catch(() => {});
+    await queryInterface.removeColumn('users', 'full_name').catch(() => {});
+    await queryInterface.removeColumn('users', 'email').catch(() => {});
   }
 };
