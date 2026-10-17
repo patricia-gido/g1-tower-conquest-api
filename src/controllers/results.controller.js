@@ -11,12 +11,13 @@ async function getResults(req, res) {
     });
   }
 
-  const results = await resultsService.listFinishedGames(since ? new Date(since) : null);
+    const results = await resultsService.listFinishedGames(since ? new Date(since) : undefined);
+
   res.status(200).json({
     game: gameInfo.slug,
     developer: gameInfo.developer,
     generated_at: new Date().toISOString(),
-    results,
+    results
   });
 }
 
