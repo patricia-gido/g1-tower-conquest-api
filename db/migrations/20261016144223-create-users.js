@@ -2,18 +2,19 @@
 module.exports = {
   async up(queryInterface, Sequelize) {
     await queryInterface.createTable('users', {
-      user_id: { type: Sequelize.INTEGER, primaryKey: true, autoIncrement: true },
-      username: { type: Sequelize.STRING(50), allowNull: false },
-      role: { type: Sequelize.STRING, allowNull: false, defaultValue: 'player' },
-      created_at: { type: Sequelize.DATE, allowNull: false, defaultValue: Sequelize.fn('NOW') }
+      id: { type: Sequelize.INTEGER, autoIncrement: true, primaryKey: true },
+      school_id: { type: Sequelize.STRING, allowNull: false },
+      full_name: { type: Sequelize.STRING, allowNull: false },
+      email: { type: Sequelize.STRING, allowNull: false },
+      created_at: { type: Sequelize.DATE, allowNull: false },
+      updated_at: { type: Sequelize.DATE, allowNull: false }
     });
     await queryInterface.addConstraint('users', {
-      type: 'unique',
-      name: 'uq_users_username',
-      fields: ['username']
+      fields: ['school_id'], type: 'unique', name: 'uq_users_school_id'
+    });
+    await queryInterface.addConstraint('users', {
+      fields: ['email'], type: 'unique', name: 'uq_users_email'
     });
   },
-  async down(queryInterface) {
-    await queryInterface.dropTable('users');
-  }
+  async down(queryInterface) { await queryInterface.dropTable('users'); }
 };
