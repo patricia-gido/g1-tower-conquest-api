@@ -24,10 +24,16 @@ async function listFinishedGames(since) {
     });
   }
 
-  // build podium = top 3 sorted by score
   for (const g of map.values()) {
     g.players.sort((a,b) => b.score - a.score);
-    g.podium = g.players.slice(0,3);
+    // podium must have rank 1 to 3
+    g.podium = g.players.slice(0,3).map((p, i) => ({
+      rank: i + 1,
+      school_id: p.school_id,
+      nickname: p.nickname,
+      score: p.score,
+      completed: p.completed
+    }));
   }
 
   return Array.from(map.values());

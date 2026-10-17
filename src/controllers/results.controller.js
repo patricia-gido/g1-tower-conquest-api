@@ -8,7 +8,7 @@ async function list(req, res) {
     if (since) {
       const d = new Date(since);
       if (isNaN(d.getTime())) {
-        return res.status(400).json({ error: 'Invalid since' });
+        return res.status(400).json({ code: 'INVALID_SINCE', message: 'Invalid since query' });
       }
     }
     const resultsArray = await resultsService.listFinishedGames(since);
@@ -18,7 +18,7 @@ async function list(req, res) {
       results: resultsArray
     });
   } catch (err) {
-    if (err.status === 400) return res.status(400).json({ error: 'Invalid since' });
+    if (err.status === 400) return res.status(400).json({ code: 'INVALID_SINCE', message: 'Invalid since query' });
     console.error(err);
     return res.status(500).json({ error: 'Internal' });
   }
