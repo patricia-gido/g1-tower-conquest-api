@@ -5,12 +5,18 @@ const gameInfo = require('../config/game-info');
 async function list(req, res) {
   try {
     const since = req.query.since;
-    if (since !== undefined && since !== '') {
-      const parsed = Date.parse(since);
-      if (isNaN(parsed)) {
+
+    // VALIDATION: any ?since= present must be valid date, empty is invalid
+    if (since !== undefined) {
+      if (typeof since !== 'string' || since.trim() === '') {
+        return res.status(400).json({ error: 'Invalid since' });
+      }
+      const d = new Date(since);
+      if (isNaN(d.getTime())) {
         return res.status(400).json({ error: 'Invalid since' });
       }
     }
+
     const resultsArray = await resultsService.listFinishedGames(since);
     return res.status(200).json({
       game: gameInfo.slug || gameInfo.game || 'tower-conquest',
