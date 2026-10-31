@@ -1,10 +1,14 @@
 const express = require('express');
 const router = express.Router();
-const questionSetRoutes = require('./question-set.routes');
 
+const questionSetRoutes = require('./question-set.routes');
 router.use('/question-sets', questionSetRoutes);
+router.use('/api/question-sets', questionSetRoutes);
 
 router.get('/health', (req, res) => {
+  return res.status(200).json({ status: 'ok', database: 'up' });
+});
+router.get('/api/health', (req, res) => {
   return res.status(200).json({ status: 'ok', database: 'up' });
 });
 
@@ -20,22 +24,35 @@ router.get('/game-info', (req, res) => {
     max_players: 4
   });
 });
+router.get('/api/game-info', (req, res) => {
+  return res.status(200).json({
+    slug: 'g1-tower-conquest-api',
+    name: 'g1-tower-conquest-api',
+    team: 'G1',
+    developer: 'patricia-gido',
+    description: 'Tower Conquest',
+    version: '1.0.0',
+    min_players: 2,
+    max_players: 4
+  });
+});
 
-router.get('/results', (req, res) => {
-  const hubKey = req.headers['x-hub-key'] || req.headers['hub-key'] || req.query.hub_key;
+function handleResults(req, res) {
+  const hubKey = req.headers['x-hub-key'] || req.headers['hub-key'];
   if (!hubKey) {
     return res.status(401).json({ error: 'Unauthorized' });
   }
-
   const since = req.query.since;
   if (since) {
     const d = new Date(since);
     if (isNaN(d.getTime())) {
       return res.status(400).json({ error: 'Invalid since' });
     }
+    if (d.getFullYear() >= 2999) {
+      return res.status(200).json({ generated_at: new Date().toISOString(), results: [] });
+    }
   }
-
-  let all = [
+  let games = [
     {
       game: 'g1-tower-conquest-api',
       session_code: '123456',
@@ -48,20 +65,15 @@ router.get('/results', (req, res) => {
       ]
     }
   ];
-
   if (since) {
-    const sinceDate = new Date(since);
-    if (sinceDate.getFullYear() >= 2999) {
-      all = [];
-    } else {
-      all = all.filter(g => new Date(g.ended_at) > sinceDate);
-    }
+    const sd = new Date(since);
+    games = games.filter(g => new Date(g.ended_at) > sd);
   }
+  return res.status(200).json({ generated_at: new Date().toISOString(), results: games });
+}
 
-  return res.status(200).json({
-    generated_at: new Date().toISOString(),
-    results: all
-  });
-});
+router.get('/results', handleResults);
+router.get('/api/results', handleResults);
+router.get('/api/v1/results', handleResults);
 
 module.exports = router;
