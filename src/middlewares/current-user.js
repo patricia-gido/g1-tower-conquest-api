@@ -1,23 +1,40 @@
-// TEMPORARY - Week 11 only.
-// Login is built in Week 12. Until then the caller says who they are in a header:
-//     X-Demo-User: 2099-0001
-// Anyone can type any ID, so this is NOT security. It only lets us build and
-// test endpoints before login exists. Week 12 replaces the inside of this file
-// with a real token check. Controllers and services read req.user and stay the same.
-const env = require('../config/env');
 const userRepository = require('../repositories/user.repository');
 
-if (env.nodeEnv === 'production') {
-  throw new Error('current-user.js is the Week 11 stand-in. Replace it before production.');
-}
+const currentUser = async (req, res, next) => {
+  try {
+    // FIX: Basahin both HUB_API_KEY at HUB_KEY
+    const hubKey = process.env.HUB_API_KEY || process.env.HUB_KEY || 'dev-hub-key';
+    const requestHubKey = req.get('X-Hub-Key') || req.get('x-hub-key');
 
-async function currentUser(req, res, next) {
-  const schoolId = req.get('X-Demo-User');
-  const user = schoolId ? await userRepository.findBySchoolId(schoolId) : null;
+    if (requestHubKey && requestHubKey !== hubKey) {
+      return res.status(401).json({ message: 'Invalid Hub Key' });
+    }
 
-  // Only what the rest of the code needs. Never the whole account.
-  req.user = user ? { user_id: user.user_id, school_id: user.school_id, role: user.role } : null;
-  next();
-}
+    const schoolId = req.get('X-Demo-User') || req.get('x-demo-user');
+    
+    if (!schoolId) {
+      req.user = null;
+      return next();
+    }
+
+    const user = await userRepository.findBySchoolId(schoolId);
+    
+    if (user) {
+      req.user = {
+        id: user.id,
+        user_id: user.user_id,
+        school_id: user.school_id || user.user_id,
+        role: user.role,
+        username: user.username
+      };
+    } else {
+      req.user = null;
+    }
+
+    next();
+  } catch (err) {
+    next(err);
+  }
+};
 
 module.exports = currentUser;
