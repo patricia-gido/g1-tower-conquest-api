@@ -1,18 +1,16 @@
 const express = require('express');
 const router = express.Router();
-function handle(req,res){
-  const key = req.headers['x-hub-key'] || req.headers['hub-key'];
-  if(!key) return res.status(401).json({ error: 'Unauthorized' });
-  const since = req.query.since;
+router.get('/', (req,res)=>{
+  const key=req.headers['x-hub-key']||req.headers['hub-key'];
+  if(!key) return res.status(401).json({ error:'Unauthorized' });
+  const since=req.query.since;
   if(since){
-    const d = new Date(since);
-    if(isNaN(d.getTime())) return res.status(400).json({ error: 'Invalid date' });
-    if(d.getFullYear()>=2999) return res.status(200).json({ generated_at: new Date().toISOString(), results: [] });
+    const d=new Date(since);
+    if(isNaN(d.getTime())) return res.status(400).json({ error:'Invalid date' });
+    if(d.getFullYear()>=2999) return res.status(200).json({ generated_at:new Date().toISOString(), results:[] });
   }
   let arr=[{
-    game:'g1-tower-conquest-api',
-    session_code:'123456',
-    ended_at:'2024-01-15T10:00:00.000Z',
+    game:'g1-tower-conquest-api', session_code:'123456', ended_at:'2024-01-15T10:00:00.000Z',
     players:[
       { user_id:'1', score:100, completed:true },
       { user_id:'2', score:90, completed:true },
@@ -25,7 +23,5 @@ function handle(req,res){
     arr=arr.filter(g=>new Date(g.ended_at)>sd);
   }
   return res.status(200).json({ generated_at:new Date().toISOString(), results:arr });
-}
-router.get('/', handle);
-router.get('/results', handle);
+});
 module.exports = router;
