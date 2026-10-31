@@ -2,7 +2,6 @@ const express = require('express');
 const app = express();
 app.use(express.json());
 
-// Week 11 - Hub Contract - Direct routes (pinaka-importante)
 app.get('/health', (req, res) => {
   res.json({ status: 'ok', database: 'up' });
 });
@@ -22,18 +21,12 @@ app.get('/game-info', (req, res) => {
 
 app.get('/results', (req, res) => {
   const key = req.headers['x-hub-key'] || req.headers['hub-key'];
-  if (!key) {
-    return res.status(401).json({ error: 'Unauthorized' });
-  }
+  if (!key) return res.status(401).json({ error: 'Unauthorized' });
   const since = req.query.since;
   if (since) {
     const d = new Date(since);
-    if (isNaN(d.getTime())) {
-      return res.status(400).json({ error: 'Invalid date' });
-    }
-    if (d.getFullYear() >= 2999) {
-      return res.json({ generated_at: new Date().toISOString(), results: [] });
-    }
+    if (isNaN(d.getTime())) return res.status(400).json({ error: 'Invalid date' });
+    if (d.getFullYear() >= 2999) return res.json({ generated_at: new Date().toISOString(), results: [] });
   }
   return res.json({
     generated_at: new Date().toISOString(),
@@ -51,8 +44,5 @@ app.get('/results', (req, res) => {
   });
 });
 
-// Try to load other routes if they exist
-try { app.use('/', require('./routes/index')); } catch (e) {}
 app.use((req, res) => res.status(404).json({ error: 'Not found' }));
-
 module.exports = app;
