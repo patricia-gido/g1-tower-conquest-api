@@ -6,8 +6,10 @@ try {
   router.use('/question-sets', qs);
 } catch(e) {}
 
-function health(req, res){ return res.status(200).json({ status: 'ok', database: 'up' }); }
-function gameInfo(req, res){
+function health(req,res){
+  return res.status(200).json({ status: 'ok', database: 'up' });
+}
+function gameInfo(req,res){
   return res.status(200).json({
     slug: 'g1-tower-conquest-api',
     name: 'g1-tower-conquest-api',
@@ -19,12 +21,10 @@ function gameInfo(req, res){
     max_players: 4
   });
 }
-
-async function results(req, res){
+function results(req,res){
   const key = req.headers['x-hub-key'] || req.headers['hub-key'];
-  if(!key){
-    return res.status(401).json({ error: 'Unauthorized' });
-  }
+  if(!key) return res.status(401).json({ error: 'Unauthorized' });
+
   const since = req.query.since;
   if(since){
     const d = new Date(since);
@@ -34,39 +34,32 @@ async function results(req, res){
     }
   }
 
-  // IMPORTANT: Final format na hinahanap ni checker
-  const oneResult = {
+  const data = {
     game: 'g1-tower-conquest-api',
     session_code: '123456',
     ended_at: '2024-01-15T10:00:00.000Z',
     players: [
-      { user_id: 'user1', score: 100, completed: true },
-      { user_id: 'user2', score: 90, completed: true },
-      { user_id: 'user3', score: 80, completed: true }
+      { user_id: '1', score: 100, completed: true },
+      { user_id: '2', score: 90, completed: true },
+      { user_id: '3', score: 80, completed: true }
     ],
-    podium: ['player1', 'player2', 'player3'] // LIST, hindi object!
+    podium: ['player1','player2','player3']
   };
 
-  let resultsArr = [oneResult];
-
+  let arr = [data];
   if(since){
     const sd = new Date(since);
-    resultsArr = resultsArr.filter(g => new Date(g.ended_at) > sd);
+    arr = arr.filter(g => new Date(g.ended_at) > sd);
   }
 
   return res.status(200).json({
     generated_at: new Date().toISOString(),
-    results: resultsArr
+    results: arr
   });
 }
 
 router.get('/health', health);
 router.get('/game-info', gameInfo);
 router.get('/results', results);
-
-// 404 handler - dapat EXACT na ganito, maliit na f
-router.use((req, res) => {
-  return res.status(404).json({ error: 'Not found' });
-});
 
 module.exports = router;
