@@ -32,7 +32,6 @@ function resultsHandler(req,res){
   if(!key) {
     return res.status(401).json({ error: { code: 'HUB_KEY_REQUIRED', message: 'Send the library key in the X-Hub-Key header.' } });
   }
-
   const since = req.query.since;
   if(since){
     const d = new Date(since);
@@ -43,7 +42,6 @@ function resultsHandler(req,res){
       return res.json({ game: 'g1-tower-conquest-api', slug: 'g1-tower-conquest-api', generated_at: new Date().toISOString(), answers: [], results: [] });
     }
   }
-
   const players = [
     { school_id: '1', user_id: '1', nickname: 'player1', score: 100, completed: true },
     { school_id: '2', user_id: '2', nickname: 'player2', score: 90, completed: true },
@@ -54,7 +52,6 @@ function resultsHandler(req,res){
     { rank: 2, school_id: '2', user_id: '2', nickname: 'player2', score: 90, completed: true },
     { rank: 3, school_id: '3', user_id: '3', nickname: 'player3', score: 80, completed: true }
   ];
-
   const gameData = {
     game: 'g1-tower-conquest-api',
     slug: 'g1-tower-conquest-api',
@@ -65,7 +62,6 @@ function resultsHandler(req,res){
     players: players,
     podium: podium
   };
-
   return res.json({
     game: 'g1-tower-conquest-api',
     slug: 'g1-tower-conquest-api',
