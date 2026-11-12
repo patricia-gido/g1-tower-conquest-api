@@ -3,11 +3,23 @@ const repo = require('../repositories/question-set.repository');
 function notFound() {
   const err = new Error('Question set not found');
   err.status = 404;
+  err.code = 'QUESTION_SET_NOT_FOUND';
   return err;
 }
 
+function forbidden() {
+  const err = new Error('Forbidden: you do not own this question set');
+  err.status = 403;
+  err.code = 'FORBIDDEN';
+  return err;
+}
+
+function getHostId(user) {
+  return user?.id || user?.user_id || 1;
+}
+
 async function create(data, user) {
-  const hostId = user?.id || user?.user_id || 1;
+  const hostId = getHostId(user);
   return repo.create({
     title: data.title,
     subject: data.subject ?? null,
@@ -26,7 +38,11 @@ async function get(id) {
   return row;
 }
 
-async function update(id, data) {
+async function update(id, data, user) {
+  const existing = await repo.findById(id);
+  if (!existing) throw notFound();
+  if (existing.host_id !== getHostId(user)) throw forbidden();
+
   const row = await repo.update(id, {
     ...(data.title !== undefined ? { title: data.title } : {}),
     ...(data.subject !== undefined ? { subject: data.subject } : {}),
@@ -36,7 +52,11 @@ async function update(id, data) {
   return row;
 }
 
-async function remove(id) {
+async function remove(id, user) {
+  const existing = await repo.findById(id);
+  if (!existing) throw notFound();
+  if (existing.host_id !== getHostId(user)) throw forbidden();
+
   const ok = await repo.remove(id);
   if (!ok) throw notFound();
 }
