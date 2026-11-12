@@ -1,87 +1,41 @@
 const express = require('express');
 const morgan = require('morgan');
-const errorHandler = require('./middlewares/error-handler');
+const { sequelize } = require('./models');
+const questionSetRoutes = require('./routes/question-set.routes');
 
 const app = express();
-app.use(morgan('dev'));
+
+// Para mabasa yung JSON sa Postman
 app.use(express.json());
 
-function healthHandler(req,res){
-  res.json({ status: 'ok', database: 'up' });
-}
-app.get('/health', healthHandler);
-app.get('/api/v1/health', healthHandler);
+// Ito yung request logging, yung sinasabi sa Step 1
+// Lalabas sa terminal yung: GET /api/v1/health 200 41ms
+app.use(morgan('dev'));
 
-function gameInfoHandler(req,res){
-  res.json({ 
-    slug: 'g1-tower-conquest-api', 
-    name: 'Tower Conquest', 
-    team: 'G10 (3-2)', 
-    developer: 'patricia-gido', 
-    description: 'My build for Bibliopolis: Tower Conquest', 
-    version: '1.0.0', 
-    min_players: 1, 
-    max_players: 30 
-  });
-}
-app.get('/game-info', gameInfoHandler);
-app.get('/api/v1/game-info', gameInfoHandler);
-
-function resultsHandler(req,res){
-  const key = req.headers['x-hub-key'] || req.headers['hub-key'];
-  if(!key) {
-    return res.status(401).json({ error: { code: 'HUB_KEY_REQUIRED', message: 'Send the library key in the X-Hub-Key header.' } });
+// Health check - ito yung tinest mo kanina sa Postman
+app.get('/api/v1/health', async (req, res) => {
+  try {
+    await sequelize.authenticate();
+    return res.json({ status: 'ok', database: 'up' });
+  } catch (err) {
+    return res.status(503).json({ status: 'error', database: 'down' });
   }
-  const since = req.query.since;
-  if(since){
-    const d = new Date(since);
-    if(isNaN(d.getTime())) {
-      return res.status(400).json({ error: { code: 'BAD_REQUEST', message: 'Invalid since' } });
-    }
-    if(d.getFullYear()>=2999) {
-      return res.json({ game: 'g1-tower-conquest-api', slug: 'g1-tower-conquest-api', generated_at: new Date().toISOString(), answers: [], results: [] });
-    }
-  }
-  const players = [
-    { school_id: '1', user_id: '1', nickname: 'player1', score: 100, completed: true },
-    { school_id: '2', user_id: '2', nickname: 'player2', score: 90, completed: true },
-    { school_id: '3', user_id: '3', nickname: 'player3', score: 80, completed: true }
-  ];
-  const podium = [
-    { rank: 1, school_id: '1', user_id: '1', nickname: 'player1', score: 100, completed: true },
-    { rank: 2, school_id: '2', user_id: '2', nickname: 'player2', score: 90, completed: true },
-    { rank: 3, school_id: '3', user_id: '3', nickname: 'player3', score: 80, completed: true }
-  ];
-  const gameData = {
-    game: 'g1-tower-conquest-api',
-    slug: 'g1-tower-conquest-api',
-    session_code: '123456',
-    join_pin: '123456',
-    started_at: '2024-01-15T09:00:00.000Z',
-    ended_at: '2024-01-15T10:00:00.000Z',
-    players: players,
-    podium: podium
-  };
-  return res.json({
-    game: 'g1-tower-conquest-api',
-    slug: 'g1-tower-conquest-api',
-    generated_at: new Date().toISOString(),
-    answers: [gameData],
-    results: [gameData]
-  });
-}
-
-app.get('/results', resultsHandler);
-app.get('/api/v1/results', resultsHandler);
-
-try{
-  app.use('/api/v1', require('./routes'));
-}catch(e){}
-
-app.use((req,res)=>{
-  res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Not found' } });
 });
 
-app.use(errorHandler);
+// Ito yung Module 1 natin - Question Sets
+app.use('/api/v1/question-sets', questionSetRoutes);
+
+// Kung walang route na tumama, 404
+app.use((req, res) => {
+  return res.status(404).json({ message: 'Route not found' });
+});
+
+// Panghuli, error handler para hindi mag-crash
+app.use((err, req, res, next) => {
+  console.error(err);
+  return res.status(err.status || 500).json({
+    message: err.message || 'Internal server error',
+  });
+});
 
 module.exports = app;

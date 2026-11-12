@@ -1,40 +1,58 @@
-const { matchedData } = require('express-validator');
-const questionSetService = require('../services/question-set.service');
+const { validationResult } = require('express-validator');
+const service = require('../services/question-set.service');
 
-function toJson(qs) {
-  return {
-    id: qs.set_id,
-    title: qs.title,
-    subject: qs.subject,
-    is_public: qs.is_public,
-    host_id: qs.host_id,
-    created_at: qs.created_at,
-    updated_at: qs.updated_at
-  };
+function check(req, res) {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(400).json({ errors: errors.array() });
+  }
+  return null;
 }
-async function list(req, res) {
-  const qss = await questionSetService.list(req.user);
-  res.status(200).json(qss.map(toJson));
+
+function handleError(err, res) {
+  if (err.status === 404) {
+    return res.status(404).json({ message: err.message });
+  }
+  return res.status(500).json({ message: 'Internal server error' });
 }
-async function get(req, res) {
-  const { id } = matchedData(req);
-  const qs = await questionSetService.get(id, req.user);
-  res.status(200).json(toJson(qs));
-}
+
 async function create(req, res) {
-  const data = matchedData(req, { locations: ['body'] });
-  const qs = await questionSetService.create(data, req.user);
-  res.status(201).json(toJson(qs));
+  if (check(req, res)) return;
+  try {
+    const created = await service.create(req.body, req.user);
+    return res.status(201).json(created);
+  } catch (err) { return handleError(err, res); }
 }
+
+async function list(req, res) {
+  try {
+    const rows = await service.list();
+    return res.json(rows);
+  } catch (err) { return handleError(err, res); }
+}
+
+async function get(req, res) {
+  if (check(req, res)) return;
+  try {
+    const row = await service.get(req.params.id);
+    return res.json(row);
+  } catch (err) { return handleError(err, res); }
+}
+
 async function update(req, res) {
-  const { id } = matchedData(req, { locations: ['params'] });
-  const changes = matchedData(req, { locations: ['body'] });
-  const qs = await questionSetService.update(id, changes, req.user);
-  res.status(200).json(toJson(qs));
+  if (check(req, res)) return;
+  try {
+    const row = await service.update(req.params.id, req.body);
+    return res.json(row);
+  } catch (err) { return handleError(err, res); }
 }
+
 async function remove(req, res) {
-  const { id } = matchedData(req);
-  await questionSetService.remove(id, req.user);
-  res.status(204).end();
+  if (check(req, res)) return;
+  try {
+    await service.remove(req.params.id);
+    return res.status(204).send();
+  } catch (err) { return handleError(err, res); }
 }
-module.exports = { list, get, create, update, remove };
+
+module.exports = { create, list, get, update, remove };

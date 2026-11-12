@@ -1,41 +1,44 @@
-const questionSetRepository = require('../repositories/question-set.repository');
-const { notFound, forbidden } = require('../errors/app-error');
+const repo = require('../repositories/question-set.repository');
 
-async function findOrFail(id) {
-  const qs = await questionSetRepository.findById(id);
-  if (!qs) throw notFound('QUESTION_SET_NOT_FOUND', `No question set has the id ${id}.`);
-  return qs;
-}
-function isOwner(qs, user) {
-  return qs.host_id === user.user_id || user.role === 'ADMIN';
+function notFound() {
+  const err = new Error('Question set not found');
+  err.status = 404;
+  return err;
 }
 
-// Rule: host sees own sets, admin sees all
-function list(user) {
-  return user.role === 'ADMIN'
-    ? questionSetRepository.findAll()
-    : questionSetRepository.findAllByHost(user.user_id);
-}
-// Rule: public can be read by anyone, private only by owner/admin
-async function get(id, user) {
-  const qs = await findOrFail(id);
-  if (!isOwner(qs, user) && !qs.is_public) {
-    throw forbidden('This question set belongs to another host.');
-  }
-  return qs;
-}
-function create(data, user) {
-  return questionSetRepository.create({ ...data, host_id: user.user_id });
-}
-async function update(id, changes, user) {
-  const qs = await findOrFail(id);
-  if (!isOwner(qs, user)) throw forbidden('This question set belongs to another host.');
-  return questionSetRepository.update(qs, changes);
-}
-async function remove(id, user) {
-  const qs = await findOrFail(id);
-  if (!isOwner(qs, user)) throw forbidden('This question set belongs to another host.');
-  await questionSetRepository.remove(qs);
+async function create(data, user) {
+  const hostId = user?.id || user?.user_id || 1;
+  return repo.create({
+    title: data.title,
+    subject: data.subject ?? null,
+    is_public: data.is_public ?? false,
+    host_id: hostId,
+  });
 }
 
-module.exports = { list, get, create, update, remove };
+async function list() {
+  return repo.findAll();
+}
+
+async function get(id) {
+  const row = await repo.findById(id);
+  if (!row) throw notFound();
+  return row;
+}
+
+async function update(id, data) {
+  const row = await repo.update(id, {
+    ...(data.title !== undefined ? { title: data.title } : {}),
+    ...(data.subject !== undefined ? { subject: data.subject } : {}),
+    ...(data.is_public !== undefined ? { is_public: data.is_public } : {}),
+  });
+  if (!row) throw notFound();
+  return row;
+}
+
+async function remove(id) {
+  const ok = await repo.remove(id);
+  if (!ok) throw notFound();
+}
+
+module.exports = { create, list, get, update, remove };
