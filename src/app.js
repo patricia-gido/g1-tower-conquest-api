@@ -4,9 +4,9 @@ const { sequelize } = require('./models');
 const questionSetRoutes = require('./routes/question-set.routes');
 const gameInfoRoutes = require('./routes/game-info.routes');
 const resultsRoutes = require('./routes/results.routes');
+const sessionRoutes = require('./routes/session.routes');
 
 const app = express();
-
 app.use(express.json());
 app.use(morgan('dev'));
 
@@ -19,6 +19,7 @@ const healthHandler = async (req, res) => {
     return res.status(503).json({ status: 'error', database: 'down' });
   }
 };
+
 app.get('/health', healthHandler);
 app.get('/api/v1/health', healthHandler);
 
@@ -28,6 +29,9 @@ app.use('/results', resultsRoutes);
 
 // Ito yung Module 1 natin - Question Sets
 app.use('/api/v1/question-sets', questionSetRoutes);
+
+// Ito yung Module 2 natin - Sessions + Players
+app.use('/api/v1/sessions', sessionRoutes);
 
 // 404 format - dapat naka { error: { ... } }
 app.use((req, res) => {
