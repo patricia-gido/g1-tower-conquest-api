@@ -23,9 +23,9 @@ const healthHandler = async (req, res) => {
 app.get('/health', healthHandler);
 app.get('/api/v1/health', healthHandler);
 
-// Ikabit yung 2 routes na kulang
-app.use('/game-info', gameInfoRoutes);
-app.use('/results', resultsRoutes);
+// FIX: Dapat may /api/v1, kasi dito tumatawag yung checker
+app.use('/api/v1/game-info', gameInfoRoutes);
+app.use('/api/v1/results', resultsRoutes);
 
 // Ito yung Module 1 natin - Question Sets
 app.use('/api/v1/question-sets', questionSetRoutes);
