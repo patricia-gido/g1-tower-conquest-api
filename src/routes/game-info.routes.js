@@ -7,7 +7,7 @@ router.get('/', (req, res) => {
     slug: 'g1-tower-conquest',
     name: 'Tower Conquest',
     team: 'G1',
-    developer: 'Patricia Gido',
+    developer: 'patricia-gido',
     description: 'A multiplayer tower conquest quiz game where players join a session, answer questions, and climb the leaderboard.',
     version: '1.0.0',
     min_players: 2,
