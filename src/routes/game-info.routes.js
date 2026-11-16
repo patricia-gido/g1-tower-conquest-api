@@ -1,7 +1,6 @@
 const express = require('express');
 const router = express.Router();
 
-// GET /api/v1/game-info
 router.get('/', (req, res) => {
   return res.json({
     slug: 'g1-tower-conquest',

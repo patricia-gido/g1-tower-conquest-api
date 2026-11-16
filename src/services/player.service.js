@@ -1,11 +1,11 @@
 const sessionService = require('./session.service');
 const playerRepo = require('../repositories/player.repository');
-const { conflict } = require('../errors/app-error');
+const { conflict, badRequest } = require('../errors/app-error');
 const { constraintOf } = require('../errors/db-errors');
 
 async function join(code, nickname, user) {
   if (!nickname || !nickname.trim()) {
-    throw conflict('NICKNAME_REQUIRED', 'Nickname is required.');
+    throw badRequest('NICKNAME_REQUIRED', 'Nickname is required.');
   }
   const cleanNickname = nickname.trim();
   const session = await sessionService.findOrFail(code);

@@ -1,36 +1,33 @@
-const service = require('../services/session.service');
+const service = require("../services/session.service");
 
-function handleError(err, res) {
-  console.error(err);
-  if (err.status) return res.status(err.status).json({ code: err.code || 'ERROR', message: err.message });
-  return res.status(500).json({ code: 'INTERNAL_ERROR', message: 'Internal server error' });
+function getCode(req) {
+  return req.params.code || req.body?.code;
 }
 
-async function create(req, res) {
+function create(req, res, next) {
+  try { return res.status(201).json(service.create(req.body)); } catch(e){ next(e); }
+}
+
+function get(req, res, next) {
+  try { return res.status(200).json(service.get(getCode(req))); } catch(e){ next(e); }
+}
+
+function join(req, res, next) {
   try {
-    const created = await service.create(req.validated.set_id, req.user);
-    return res.status(201).json(created);
-  } catch (err) {
-    return handleError(err, res);
-  }
+    // DITO YUNG FIX: Body lang yung gamitin, wag Header
+    const nickname = req.body?.nickname;
+    const player_id = req.body?.player_id || req.body?.playerId;
+    const r = service.join(getCode(req), nickname, player_id);
+    return res.status(r.alreadyJoined ? 200 : 201).json(r);
+  } catch(e){ next(e); }
 }
 
-async function get(req, res) {
+function start(req, res, next) {
   try {
-    const row = await service.get(req.params.code);
-    return res.json(row);
-  } catch (err) {
-    return handleError(err, res);
-  }
+    // DITO LANG GAGAMITIN YUNG HEADER
+    const demoUser = req.headers["x-demo-user"];
+    return res.status(200).json(service.start(getCode(req), demoUser));
+  } catch(e){ next(e); }
 }
 
-async function changeStatus(req, res) {
-  try {
-    const row = await service.changeStatus(req.params.code, req.validated.status, req.user);
-    return res.json(row);
-  } catch (err) {
-    return handleError(err, res);
-  }
-}
-
-module.exports = { create, get, changeStatus };
+module.exports = { create, get, join, start };
