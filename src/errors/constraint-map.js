@@ -17,13 +17,6 @@ module.exports = {
     code: 'JOIN_PIN_TAKEN',
     message: 'That join PIN is already used by another game.',
   },
-  // Kapag nag-try mag-delete ng question set na ginamit na sa game
-  // Ito yung kaka-ayos lang natin kanina!
-  game_sessions_set_id_fkey: {
-    status: 409,
-    code: 'QUESTION_SET_IN_USE',
-    message: 'This question set was used in a game and cannot be deleted.',
-  },
   // Kapag nag-try mag-delete ng host na may question set pa
   question_sets_host_id_fkey: {
     status: 409,
