@@ -6,7 +6,6 @@ const gameInfoRoutes = require('./routes/game-info.routes');
 const resultsRoutes = require('./routes/results.routes');
 
 const app = express();
-
 app.use(express.json());
 app.use(morgan('dev'));
 
@@ -19,10 +18,13 @@ const healthHandler = async (req, res) => {
     return res.status(503).json({ status: 'error', database: 'down' });
   }
 };
+
 app.get('/health', healthHandler);
 app.get('/api/v1/health', healthHandler);
 
-// Ikabit yung 2 routes na kulang
+// Ikabit yung 2 routes na kulang - DAPAT may /api/v1 para sa checker
+app.use('/api/v1/game-info', gameInfoRoutes);
+app.use('/api/v1/results', resultsRoutes);
 app.use('/game-info', gameInfoRoutes);
 app.use('/results', resultsRoutes);
 
