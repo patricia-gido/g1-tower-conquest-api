@@ -1,23 +1,23 @@
 const { Player } = require('../models');
 
-async function findBySessionAndUser(session_id, user_id) {
-  return Player.findOne({ where: { session_id, user_id } });
+function findSeat(sessionId, userId) {
+  return Player.findOne({ where: { session_id: sessionId, user_id: userId } });
 }
 
-async function countBySession(session_id) {
-  return Player.count({ where: { session_id } });
+function countBySession(sessionId) {
+  return Player.count({ where: { session_id: sessionId } });
 }
 
-async function create(data) {
+function create(data) {
   return Player.create(data);
 }
 
-async function update(player_id, data) {
-  return Player.update(data, { where: { player_id } });
+function listBySession(sessionId) {
+  return Player.findAll({ where: { session_id: sessionId }, order: [['score', 'DESC']] });
 }
 
-async function listBySession(session_id) {
-  return Player.findAll({ where: { session_id }, order: [['score', 'DESC']] });
+function markSeen(player) {
+  return player.update({ last_seen_at: new Date() });
 }
 
-module.exports = { findBySessionAndUser, countBySession, create, update, listBySession };
+module.exports = { findSeat, countBySession, create, listBySession, markSeen };

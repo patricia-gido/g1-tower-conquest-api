@@ -1,21 +1,15 @@
 const { Session } = require('../models');
 
-async function create(data) {
+function create(data) {
   return Session.create(data);
 }
 
-async function findById(id) {
-  return Session.findByPk(id);
-}
-
-async function findByPin(joinPin) {
+function findByCode(joinPin) {
   return Session.findOne({ where: { join_pin: joinPin } });
 }
 
-async function update(id, changes) {
-  const row = await Session.findByPk(id);
-  if (!row) return null;
-  return row.update(changes);
+function update(session, changes) {
+  return session.update(changes);
 }
 
-module.exports = { create, findById, findByPin, update };
+module.exports = { create, findByCode, update };

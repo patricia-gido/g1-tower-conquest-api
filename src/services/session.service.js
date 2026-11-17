@@ -1,52 +1,53 @@
-const sessions = new Map();
+const sessionRepository = require('../repositories/session.repository');
+const questionSetRepository = require('../repositories/question-set.repository');
+const { notFound, forbidden, conflict } = require('../errors/http-errors');
 
-function makeError(status, code, message) {
-  const e = new Error(message);
-  e.status = status; e.code = code;
-  return e;
+function randomCode() {
+  return String(Math.floor(100000 + Math.random() * 900000));
 }
-function isSixDigits(code) { return /^\d{6}$/.test(String(code || "")); }
 
-function create(body) {
-  const code = String(Math.floor(100000 + Math.random() * 900000));
-  const session = { code, set_id: body?.set_id || 1, status: "WAITING", players: [] };
-  sessions.set(code, session);
+async function findOrFail(code) {
+  const session = await sessionRepository.findByCode(code);
+  if (!session) throw notFound('SESSION_NOT_FOUND', `No game with code ${code}.`);
   return session;
 }
 
-function get(code) {
-  if (!isSixDigits(code)) throw makeError(400, "INVALID_CODE", "Code must be six digits.");
-  const s = sessions.get(String(code));
-  if (!s) throw makeError(404, "NOT_FOUND", "No game uses this code.");
-  return s;
-}
-
-function join(code, nickname, player_id) {
-  const s = get(code);
-  if (!nickname || nickname.length < 3) throw makeError(400, "INVALID_NICKNAME", "Nickname too short.");
-  if (s.status !== "WAITING") throw makeError(409, "TOO_LATE", "Game already started.");
-
-  const samePlayer = s.players.find(p => p.player_id === player_id);
-  if (samePlayer && samePlayer.nickname === nickname) {
-    return { ...s, alreadyJoined: true };
+async function create(setId, user) {
+  const questionSet = await questionSetRepository.findById(setId);
+  if (!questionSet) throw notFound('QUESTION_SET_NOT_FOUND', 'No question set has that id.');
+  // user.id yung number (4), hindi user.user_id na 'host1'
+  if (questionSet.host_id !== user.id && !questionSet.is_public) {
+    throw forbidden('This question set belongs to another host.');
   }
-  const taken = s.players.find(p => p.nickname === nickname);
-  if (taken) throw makeError(409, "NICKNAME_TAKEN", "Nickname already taken.");
-
-  s.players.push({ nickname, player_id: player_id || nickname });
-  return { ...s, alreadyJoined: false };
+  for (let i = 1; i <= 5; i++) {
+    try {
+      return await sessionRepository.create({
+        set_id: setId,
+        host_id: user.id,
+        join_pin: randomCode(),
+        status: 'LOBBY',
+      });
+    } catch (e) {
+      if (e.name !== 'SequelizeUniqueConstraintError') throw e;
+    }
+  }
+  throw new Error('Could not find a free join code after 5 attempts.');
 }
 
-function start(code, demoUser) {
-  const s = get(code);
-  // #2 - Pag player yung nag-start, 403 agad
-  if (demoUser !== "host1") throw makeError(403, "FORBIDDEN", "Only host can start.");
-  // #12 - Pag STARTED na, bawal ulit i-start, 409
-  if (s.status !== "WAITING") throw makeError(409, "INVALID_STATUS", "Status change not allowed.");
-  s.status = "STARTED";
-  return s;
+const NEXT_STATUS = { LOBBY: ['RUNNING', 'CLOSED'], RUNNING: ['CLOSED'], CLOSED: [] };
+
+async function changeStatus(code, status, user) {
+  const session = await findOrFail(code);
+  if (session.host_id !== user.id && user.role !== 'ADMIN') {
+    throw forbidden('This game belongs to another host.');
+  }
+  if (!NEXT_STATUS[session.status].includes(status)) {
+    throw conflict('INVALID_STATUS_CHANGE', `A ${session.status} game cannot become ${status}.`);
+  }
+  const changes = { status };
+  if (status === 'RUNNING') changes.started_at = new Date();
+  if (status === 'CLOSED') changes.ended_at = new Date();
+  return sessionRepository.update(session, changes);
 }
 
-function clear() { sessions.clear(); }
-
-module.exports = { create, get, join, start, clear };
+module.exports = { create, findOrFail, changeStatus };

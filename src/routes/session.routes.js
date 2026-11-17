@@ -1,19 +1,16 @@
-const express = require("express");
-const router = express.Router();
-const controller = require("../controllers/session.controller");
+const { Router } = require('express');
+const sessionController = require('../controllers/session.controller');
+const playerController = require('../controllers/player.controller');
+const rules = require('../validators/session.validator');
+const validate = require('../middlewares/validate');
+const requireUser = require('../middlewares/require-user');
 
-// Create
-router.post("/", controller.create);
+const router = Router();
 
-// Join - pareho gagana, kahit saan mo ilagay yung code
-router.post("/join", controller.join);
-router.post("/:code/join", controller.join);
-
-// Get - kahit anong code
-router.get("/:code", controller.get);
-
-// Start - ITO YUNG FIX MO, pareho gagana
-router.post("/start", controller.start);
-router.post("/:code/start", controller.start);
+router.post('/', requireUser('host'), rules.createRules, validate, sessionController.create);
+router.get('/:code', rules.codeParam, validate, sessionController.get);
+router.patch('/:code', requireUser('host'), rules.statusRules, validate, sessionController.changeStatus);
+router.post('/:code/players', requireUser(), rules.joinRules, validate, playerController.join);
+router.get('/:code/players', rules.codeParam, validate, playerController.list);
 
 module.exports = router;
