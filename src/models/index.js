@@ -11,11 +11,21 @@ const sequelize = new Sequelize(
 
 // Load your models here
 const User = require('./user')(sequelize, DataTypes);
+const QuestionSet = require('./question-set')(sequelize, DataTypes);
 
-const db = { 
-  sequelize, 
-  Sequelize, 
-  User 
+const db = {
+  sequelize,
+  Sequelize,
+  User,
+  QuestionSet,
 };
+
+// Run associations if defined
+if (QuestionSet.associate) {
+  QuestionSet.associate(db);
+}
+if (User.associate) {
+  User.associate(db);
+}
 
 module.exports = db;
