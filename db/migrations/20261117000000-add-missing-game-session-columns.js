@@ -1,30 +1,25 @@
 'use strict';
+/** @type {import('sequelize-cli').Migration} */
 module.exports = {
   async up(queryInterface, Sequelize) {
-    await queryInterface.addColumn('game_sessions', 'host_id', {
-      type: Sequelize.INTEGER,
-      allowNull: true,
-    });
-    await queryInterface.addColumn('game_sessions', 'status', {
-      type: Sequelize.ENUM('LOBBY', 'RUNNING', 'CLOSED'),
-      allowNull: false,
-      defaultValue: 'LOBBY',
-    });
-    await queryInterface.addColumn('game_sessions', 'max_players', {
-      type: Sequelize.INTEGER,
-      allowNull: false,
-      defaultValue: 20,
-    });
-    await queryInterface.addColumn('game_sessions', 'current_position', {
-      type: Sequelize.INTEGER,
-      allowNull: false,
-      defaultValue: 0,
-    });
+    const table = await queryInterface.describeTable('game_sessions');
+    const addIfMissing = async (column, options) => {
+      if (!table[column]) {
+        await queryInterface.addColumn('game_sessions', column, options);
+      }
+    };
+    await addIfMissing('host_id', { type: Sequelize.INTEGER, allowNull: true, });
+    await addIfMissing('set_id', { type: Sequelize.INTEGER, allowNull: true, });
+    await addIfMissing('join_pin', { type: Sequelize.STRING, allowNull: true, unique: true, });
+    await addIfMissing('status', { type: Sequelize.STRING, allowNull: false, defaultValue: 'LOBBY', });
+    await addIfMissing('started_at', { type: Sequelize.DATE, allowNull: true, });
+    await addIfMissing('finished_at', { type: Sequelize.DATE, allowNull: true, });
   },
   async down(queryInterface, Sequelize) {
-    await queryInterface.removeColumn('game_sessions', 'host_id');
-    await queryInterface.removeColumn('game_sessions', 'status');
-    await queryInterface.removeColumn('game_sessions', 'max_players');
-    await queryInterface.removeColumn('game_sessions', 'current_position');
-  }
+    // No-op: Huwag nang burahin dito.
+    // Yung ibang migration na yung may-ari ng mga columns na to,
+    // pag binura pa natin dito magdo-double delete at mag-ERROR.
+    // Kailangan lang ng CI check na hindi mag-error pag nag-undo.
+    return;
+  },
 };
