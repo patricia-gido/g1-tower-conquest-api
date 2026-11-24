@@ -1,17 +1,73 @@
-// Builds the Express app. Does NOT start listening - server.js does that.
 const express = require('express');
-const routes = require('./routes');
-const notFound = require('./middlewares/not-found');
-const errorHandler = require('./middlewares/error-handler');
+const morgan = require('morgan');
+const { sequelize } = require('./models');
+const constraintMap = require('./errors/constraint-map');
+const questionSetRoutes = require('./routes/question-set.routes');
+const gameInfoRoutes = require('./routes/game-info.routes');
+const resultsRoutes = require('./routes/results.routes');
+const sessionRoutes = require('./routes/session.routes');
 
 const app = express();
-
 app.use(express.json());
+app.use(morgan('dev'));
 
-// Hub Contract: every endpoint lives under /api/v1
-app.use('/api/v1', routes);
+// /health
+const healthHandler = async (req, res) => {
+  try {
+    await sequelize.authenticate();
+    return res.json({ status: 'ok', database: 'up' });
+  } catch (err) {
+    return res.status(503).json({ status: 'error', database: 'down' });
+  }
+};
 
-app.use(notFound);
-app.use(errorHandler);
+app.get('/health', healthHandler);
+app.get('/api/v1/health', healthHandler);
+
+// Module 1 + Hub Contract
+app.use('/api/v1/game-info', gameInfoRoutes);
+app.use('/api/v1/results', resultsRoutes);
+app.use('/game-info', gameInfoRoutes);
+app.use('/results', resultsRoutes);
+
+// Module 1 - Question Sets
+app.use('/api/v1/question-sets', questionSetRoutes);
+
+// Module 2 - Sessions and Players
+app.use('/api/v1/sessions', sessionRoutes);
+
+// 404 format - dapat naka { error: { ... } }
+app.use((req, res) => {
+  return res.status(404).json({ error: { code: 'ROUTE_NOT_FOUND', message: 'Route not found' } });
+});
+
+// Error Handler - Module 6
+app.use((err, req, res, next) => {
+  if (err instanceof SyntaxError && err.status === 400 && 'body' in err) {
+    return res.status(400).json({ error: { code: 'INVALID_JSON', message: 'Invalid JSON in request body' } });
+  }
+
+  // Module 6 - Translate DB constraints to 409
+  const constraintName = err.parent?.constraint || err.original?.constraint || err.constraint;
+  const mapped = constraintName && constraintMap[constraintName];
+
+  if (mapped) {
+    return res.status(mapped.status).json({
+      error: { code: mapped.code, message: mapped.message }
+    });
+  }
+
+  // Fallback: kahit walang pangalan, pag unique / FK error, 409 pa rin, hindi 500
+  if (err.name === 'SequelizeUniqueConstraintError' || err.name === 'SequelizeForeignKeyConstraintError') {
+    return res.status(409).json({
+      error: { code: 'CONFLICT', message: err.message || 'Conflict' }
+    });
+  }
+
+  console.error(err);
+  return res.status(err.status || 500).json({
+    error: { code: err.code || 'INTERNAL_ERROR', message: err.message || 'Internal server error' },
+  });
+});
 
 module.exports = app;
